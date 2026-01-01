@@ -1,20 +1,31 @@
-import axios from "axios";
+export async function callAI(text, systemPrompt, sessionId) {
+  const url =
+    `https://api.nekolabs.web.id/text.gen/gpt/5` +
+    `?text=${encodeURIComponent(text)}` +
+    `&systemPrompt=${encodeURIComponent(systemPrompt)}` +
+    `&sessionId=${encodeURIComponent(sessionId)}`;
 
-export async function aiGenerateHandler(promptText) {
-  const res = await axios.get(
-    "https://api.nekolabs.web.id/text.gen/gpt/5",
-    {
-      params: {
-        text: promptText,
-        systemPrompt:
-          "Kamu adalah AI pembuat handler JavaScript siap pakai, modular, async/await, error handling wajib.",
-        sessionId: Date.now().toString()
-      }
-    }
-  );
+  const res = await fetch(url);
 
-  if (!res.data?.success)
-    throw new Error("AI gagal memproses prompt");
+  const raw = await res.text(); // baca raw dulu
 
-  return res.data.result;
+  // API error di Vercel sering berupa HTML → cegah JSON.parse crash
+  if (!raw.trim().startsWith("{")) {
+    console.error("RAW RESPONSE (bukan JSON):\n", raw);
+    throw new Error("AI API tidak mengembalikan JSON (kemungkinan server error)");
+  }
+
+  let data;
+  try {
+    data = JSON.parse(raw);
+  } catch (e) {
+    console.error("JSON parse gagal:\n", raw);
+    throw new Error("Response AI tidak valid JSON");
+  }
+
+  if (!data.success) {
+    throw new Error(data.message || "AI API gagal memproses request");
+  }
+
+  return data;
 }
