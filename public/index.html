@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Handler Generator</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-neutral-900 text-white">
+  <div class="max-w-3xl mx-auto p-6 space-y-6">
+
+    <h1 class="text-2xl font-bold">AI Handler Generator</h1>
+    <p class="text-sm text-neutral-300">
+      Tempel deskripsi API / scrape / logic — AI akan membuatkan handler siap-pakai.
+    </p>
+
+    <!-- INPUT — NAME -->
+    <input
+      id="name"
+      placeholder="Nama handler (contoh: youtube-shorts)"
+      class="w-full p-3 rounded bg-neutral-800 border border-neutral-700"
+    />
+
+    <!-- MODE SELECT -->
+    <select
+      id="mode"
+      class="w-full p-3 rounded bg-neutral-800 border border-neutral-700"
+    >
+      <option value="api">API</option>
+      <option value="scrape">Scrape</option>
+      <option value="logic">Logic / Bot</option>
+    </select>
+
+    <!-- DESCRIPTION -->
+    <textarea
+      id="desc"
+      rows="7"
+      class="w-full p-3 rounded bg-neutral-800 border border-neutral-700"
+      placeholder="Masukkan deskripsi / kode scrape / endpoint API"
+    ></textarea>
+
+    <!-- LOADING BOX -->
+    <div
+      id="loading"
+      class="hidden w-full p-3 rounded bg-neutral-800 border border-neutral-700 flex items-center gap-3"
+    >
+      <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg"
+        fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10"
+          stroke="white" stroke-width="4"></circle>
+        <path class="opacity-75" fill="white"
+          d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"></path>
+      </svg>
+      <span>Sedang memproses dengan AI… tunggu sebentar</span>
+    </div>
+
+    <!-- GENERATE BUTTON -->
+    <button
+      id="generateBtn"
+      onclick="generate()"
+      class="w-full p-3 rounded bg-emerald-600 hover:bg-emerald-500"
+    >
+      Generate Handler
+    </button>
+
+    <!-- RESULT OUTPUT -->
+    <div id="output" class="hidden space-y-2">
+      <div class="flex justify-between items-center">
+        <h2 class="font-semibold">Generated Handler</h2>
+
+        <button
+          id="copyBtn"
+          onclick="copyCode()"
+          class="text-xs px-3 py-1 rounded bg-neutral-700 hover:bg-neutral-600"
+        >
+          Salin Code
+        </button>
+      </div>
+
+      <pre
+        id="result"
+        class="p-3 rounded bg-neutral-800 border border-neutral-700 overflow-auto"
+      ></pre>
+    </div>
+
+  </div>
+
+<script>
+let lastCode = "";
+
+// UI loading state
+function setLoading(state) {
+  const btn = document.getElementById("generateBtn");
+  const loader = document.getElementById("loading");
+
+  if (state) {
+    btn.disabled = true;
+    btn.textContent = "Memproses…";
+    btn.classList.add("opacity-60","cursor-not-allowed");
+    loader.classList.remove("hidden");
+  } else {
+    btn.disabled = false;
+    btn.textContent = "Generate Handler";
+    btn.classList.remove("opacity-60","cursor-not-allowed");
+    loader.classList.add("hidden");
+  }
+}
+
+// MAIN GENERATE FUNCTION
+async function generate() {
+  setLoading(true);
+
+  try {
+    const res = await fetch("/api/generate", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        name: name.value,
+        mode: mode.value,
+        description: desc.value
+      })
+    });
+
+    const data = await res.json();
+
+    const out = document.getElementById("output");
+    const box = document.getElementById("result");
+
+    if (!data.success) {
+      box.textContent = "Error: " + data.message;
+      out.classList.remove("hidden");
+      return;
+    }
+
+    lastCode = data.preview;
+
+    box.textContent =
+      `File: ${data.filePath}\n\n${data.preview}`;
+
+    out.classList.remove("hidden");
+
+  } catch (err) {
+    alert("Gagal memproses: " + err.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+// COPY BUTTON
+async function copyCode() {
+  if (!lastCode) return;
+
+  await navigator.clipboard.writeText(lastCode);
+
+  const btn = document.getElementById("copyBtn");
+  btn.textContent = "Disalin ✓";
+
+  setTimeout(() => (btn.textContent = "Salin Code"), 1200);
+}
+</script>
+
+</body>
+</html>
