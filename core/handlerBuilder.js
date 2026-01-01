@@ -11,20 +11,24 @@ export function buildAIHandler() {
     }
 
     try {
-      // --- Normalisasi body (antisipasi req.body = string) ---
+      // --- Normalisasi req.body ---
       let body = req.body;
 
+      // beberapa runtime mengirim string
       if (typeof body === "string") {
         try {
           body = JSON.parse(body);
         } catch {
-          throw new Error("Body harus JSON valid");
+          return res.status(400).json({
+            ok: false,
+            error: "Body harus JSON valid"
+          });
         }
       }
 
       const { text, systemPrompt, sessionId } = body || {};
 
-      // --- Validasi wajib ---
+      // validasi wajib
       if (!text || !text.trim()) {
         return res.status(400).json({
           ok: false,
@@ -32,7 +36,7 @@ export function buildAIHandler() {
         });
       }
 
-      const started = Date.now();
+      const start = Date.now();
 
       const result = await callAI(
         text.trim(),
@@ -40,13 +44,13 @@ export function buildAIHandler() {
         sessionId?.toString() || Date.now().toString()
       );
 
-      const finished = Date.now();
+      const end = Date.now();
 
       return res.status(200).json({
         ok: true,
         result: result?.result ?? result,
         timestamp: result?.timestamp ?? new Date().toISOString(),
-        responseTime: result?.responseTime ?? `${finished - started}ms`
+        responseTime: result?.responseTime ?? `${end - start}ms`
       });
 
     } catch (err) {
