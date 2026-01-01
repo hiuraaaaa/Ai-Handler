@@ -11,10 +11,10 @@ export function buildAIHandler() {
     }
 
     try {
-      // --- Normalisasi req.body ---
+     
       let body = req.body;
 
-      // beberapa runtime mengirim string
+      
       if (typeof body === "string") {
         try {
           body = JSON.parse(body);
@@ -28,7 +28,7 @@ export function buildAIHandler() {
 
       const { text, systemPrompt, sessionId } = body || {};
 
-      // validasi wajib
+      
       if (!text || !text.trim()) {
         return res.status(400).json({
           ok: false,
