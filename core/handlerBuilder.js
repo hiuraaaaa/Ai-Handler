@@ -1,20 +1,36 @@
-import fs from "fs";
-import path from "path";
+import { callAI } from "./aiRefactor.js";
 
-const GENERATED_DIR = "handlers/generated";
+export function buildAIHandler() {
+  return async function handler(req, res) {
+    if (req.method !== "POST") {
+      return res.status(405).json({ ok: false, error: "Method not allowed" });
+    }
 
-if (!fs.existsSync(GENERATED_DIR)) {
-  fs.mkdirSync(GENERATED_DIR, { recursive: true });
-}
+    try {
+      const { text, systemPrompt, sessionId } = req.body || {};
 
-export function saveGeneratedHandler(name, code) {
-  const slug = name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
+      if (!text) throw new Error("text wajib diisi");
 
-  const filePath = path.join(GENERATED_DIR, `${slug}.js`);
-  fs.writeFileSync(filePath, code.trim());
+      const result = await callAI(
+        text,
+        systemPrompt || "default-system",
+        sessionId || Date.now().toString()
+      );
 
-  return filePath;
+      return res.json({
+        ok: true,
+        result: result.result,
+        timestamp: result.timestamp,
+        responseTime: result.responseTime
+      });
+
+    } catch (err) {
+      console.error("Handler Error:", err.message);
+
+      return res.status(500).json({
+        ok: false,
+        error: err.message || "Internal handler error"
+      });
+    }
+  };
 }
